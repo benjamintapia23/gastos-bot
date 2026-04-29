@@ -1,0 +1,6 @@
+flask==3.1.0
+twilio==9.4.3
+gspread==6.1.4
+google-auth==2.37.0
+python-dotenv==1.0.1
+gunicorn==23.0.0
