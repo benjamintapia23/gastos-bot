@@ -262,6 +262,8 @@ def webhook():
 
     reply = process_message(phone, body)
 
+    logging.info(f"Respuesta -> {reply[:80]}")
+
     resp = MessagingResponse()
     resp.message(reply)
     return str(resp)
