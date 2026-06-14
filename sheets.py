@@ -17,10 +17,7 @@ HEADERS = ["Fecha", "Hora", "Monto", "Categoria", "Descripcion", "Metodo de Pago
 
 
 class SheetsManager:
-    def __init__(self):
-        spreadsheet_id = os.getenv("SPREADSHEET_ID")
-        if not spreadsheet_id:
-            raise ValueError("SPREADSHEET_ID no encontrado en .env")
+    def __init__(self, spreadsheet_id: str):
 
         # Soporta credenciales como JSON string (Railway) o archivo local
         creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
@@ -33,6 +30,7 @@ class SheetsManager:
 
         client = gspread.authorize(creds)
         self.sheet = client.open_by_key(spreadsheet_id).sheet1
+
         self._ensure_headers()
 
     def _ensure_headers(self):

@@ -14,11 +14,29 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
-sheets = SheetsManager()
 
 # Estado de conversacion por usuario (en memoria)
 # formato: { "whatsapp:+549...": { "state": "AMOUNT", "data": {...} } }
 sessions = {}
+
+# Caché de instancias SheetsManager por spreadsheet_id
+_sheets_cache: dict = {}
+
+# Mapeo de numero de telefono -> spreadsheet_id
+# Agrega una linea por cada usuario adicional:
+#   "whatsapp:+549XXXXXXXXXX": os.getenv("SPREADSHEET_ID_PAPA"),
+_PHONE_SHEET_MAP = {
+    os.getenv("PHONE_PAPA"): os.getenv("SPREADSHEET_ID_PAPA"),
+}
+
+
+def get_sheets(phone: str) -> SheetsManager:
+    spreadsheet_id = _PHONE_SHEET_MAP.get(phone) or os.getenv("SPREADSHEET_ID")
+    if not spreadsheet_id:
+        raise ValueError(f"No hay SPREADSHEET_ID configurado para {phone}")
+    if spreadsheet_id not in _sheets_cache:
+        _sheets_cache[spreadsheet_id] = SheetsManager(spreadsheet_id)
+    return _sheets_cache[spreadsheet_id]
 
 CATEGORIES = [
     "Comida", "Transporte", "Entretenimiento",
@@ -89,13 +107,13 @@ def process_message(phone, body):
         return HELP_MSG
 
     if text.lower() == "resumen":
-        return handle_resumen()
+        return handle_resumen(phone)
 
     if text.lower() == "hoy":
-        return handle_hoy()
+        return handle_hoy(phone)
 
     if text.lower() == "borrar":
-        return handle_borrar()
+        return handle_borrar(phone)
 
     # --- Estado: IDLE ---
     if state == STATES["IDLE"]:
@@ -171,7 +189,7 @@ def save_expense(phone, session):
     """Guarda el gasto en Google Sheets y resetea la sesion."""
     data = session["data"]
     try:
-        sheets.add_expense(
+        get_sheets(phone).add_expense(
             date=data["date"],
             time=data["time"],
             amount=data["amount"],
@@ -196,9 +214,9 @@ def save_expense(phone, session):
     return response
 
 
-def handle_resumen():
+def handle_resumen(phone):
     try:
-        summary = sheets.get_monthly_summary()
+        summary = get_sheets(phone).get_monthly_summary()
         if not summary:
             return "No hay gastos registrados este mes."
 
@@ -215,9 +233,9 @@ def handle_resumen():
         return "Error al obtener el resumen."
 
 
-def handle_borrar():
+def handle_borrar(phone):
     try:
-        deleted = sheets.delete_last_expense()
+        deleted = get_sheets(phone).delete_last_expense()
         if not deleted:
             return "No hay gastos para borrar."
         return (
@@ -233,9 +251,9 @@ def handle_borrar():
         return "Error al borrar el gasto."
 
 
-def handle_hoy():
+def handle_hoy(phone):
     try:
-        gastos = sheets.get_today_expenses()
+        gastos = get_sheets(phone).get_today_expenses()
         if not gastos:
             return "No hay gastos registrados hoy."
 
