@@ -162,7 +162,12 @@ def process_message(phone, body):
 
 def handle_amount(phone, text, session):
     """Intenta parsear el texto como monto."""
-    cleaned = text.replace(",", ".").replace("$", "").strip()
+    cleaned = text.replace("$", "").strip()
+    if "," in cleaned and "." in cleaned:
+        # Formato argentino: punto de miles, coma decimal (ej: 1.500,50)
+        cleaned = cleaned.replace(".", "").replace(",", ".")
+    else:
+        cleaned = cleaned.replace(",", ".")
     try:
         amount = float(cleaned)
         if amount <= 0:

@@ -51,7 +51,7 @@ class SheetsManager:
     def get_monthly_summary(self):
         """Devuelve un dict {categoria: total} del mes actual."""
         month = datetime.now().strftime("%m/%Y")
-        records = self.sheet.get_all_records()
+        records = self.sheet.get_all_records(expected_headers=HEADERS)
         summary = {}
         for row in records:
             fecha = str(row.get("Fecha", ""))
@@ -66,7 +66,7 @@ class SheetsManager:
     def get_today_expenses(self):
         """Devuelve lista de gastos del dia de hoy."""
         today = datetime.now().strftime("%d/%m/%Y")
-        records = self.sheet.get_all_records()
+        records = self.sheet.get_all_records(expected_headers=HEADERS)
         return [r for r in records if str(r.get("Fecha", "")) == today]
 
     def delete_last_expense(self):
